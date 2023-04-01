@@ -36,8 +36,6 @@ def app(scr):
 
     clock = True
 
-    key = -1
-
     game = Game()
     game.test()
 
@@ -47,19 +45,14 @@ def app(scr):
         # get time at loop start
         s_time = time()
 
-        inp_key = scr.getch()
-
-        if inp_key != -1:
-            key = inp_key
+        key = scr.getch()
         
-        if key != -1:
-            if key == 27: # escape
-                break
-            else:
-                game.update(key)
+        if key == 27: # escape
+            break
+        else:
+            game.update(key)
 
-            key = -1
-            curses.flushinp()
+        curses.flushinp()
 
         scr.clear()
 

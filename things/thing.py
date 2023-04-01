@@ -4,11 +4,8 @@ from src.my_random import get_id
 class Thing:
     def __init__(self, team: str=None):
         self.id = get_id()
-
         self.team = team
-
         self.img = "■"
-
         self.name = None
 
     def get_color(self):

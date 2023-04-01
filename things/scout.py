@@ -7,13 +7,10 @@ class Scout(Thing):
 
         self.img = "$"
 
-        #####
-
+        # >>>
         self.max_health = 6
         self.cur_health = self.max_health
-
         self.speed = 3
-
         self.max_actions = 2
         self.cur_actions = self.max_actions
 
@@ -21,9 +18,7 @@ class Scout(Thing):
         super().draw_info(y, x, scr)
 
         scr.addstr(y + 1, x, "HP: ")
-
         for i in range(self.max_health):
-            scr.addstr(y + 1, x + 4 + i, "□")
-        
+            scr.addstr(y + 1, x + 4 + i, "□")  
         for i in range(self.cur_health):
             scr.addstr(y + 1, x + 4 + i, "■")
