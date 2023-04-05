@@ -3,15 +3,10 @@
 import curses
 import os
 
-from dataclasses import dataclass
 from time import sleep, time
 
 from src.game import Game
-
-@dataclass
-class KeyPress:
-    key: int
-    new_key_press: bool
+from src.color_helper import color_code
 
 FPS_RATIO = 1 / 12
 WIDTH = 12
@@ -27,9 +22,9 @@ def app(scr):
     # 6:cyan
     # 7:white
 
-    for bg in range(7):
-        for fg in range(7):
-            curses.init_pair((10 * bg) + fg + 1, fg, bg)
+    for bg in range(7 + 1):
+        for fg in range(7 + 1):
+            curses.init_pair(color_code(fg, bg), fg, bg)
 
     curses.curs_set(False)
     scr.nodelay(True)

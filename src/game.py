@@ -1,5 +1,6 @@
 import curses
 
+from src.color_helper import color_code
 from src.map import Map
 from things import *
 
@@ -16,6 +17,11 @@ class Game:
         self.cur_team = "PLAYER"
 
         self.things = []
+        self.team_things = {
+            "PLAYER": []
+            , "ENEMY": []
+        }
+        self.cur_thing_ind = 0
         self.cur_thing = None
 
         self.map = Map(self.frame_width, self.frame_height)
@@ -25,40 +31,64 @@ class Game:
     def is_turn_over(self):
         return sum([x.cur_actions for x in self.things if x.team == self.cur_team]) == 0
 
-    def refresh(self):
+    def refresh_actions(self):
         for thing in self.things:
             if hasattr(thing, "cur_actions"):
                 thing.cur_actions = thing.max_actions
+                thing.refresh_action_blocks()
+
+    def add_thing(self, thing: Thing):
+        self.things.append(thing)
+
+        if thing.team:
+            self.team_things[thing.team].append(thing)
 
     def update(self, key):
-        self.cursor_change = True
+        if self.cur_team == "PLAYER":
+            self.cursor_change = True
 
-        if key in [258, 456]: # DOWN
-            self.cursor_y = min(self.cursor_y + 1, self.frame_height - 1)
-        elif key in [259, 450]: # UP
-            self.cursor_y = max(self.cursor_y - 1, 0)
-        elif key in [260, 452]: # LEFT
-            self.cursor_x = max(self.cursor_x - 1, 0)
-        elif key in [261, 454]: # RIGHT
-            self.cursor_x = min(self.cursor_x + 1, self.frame_width - 1)
-        else:
-            self.cursor_change = False
+            if key in [258, 456]: # DOWN
+                self.cursor_y = min(self.cursor_y + 1, self.frame_height - 1)
+            elif key in [259, 450]: # UP
+                self.cursor_y = max(self.cursor_y - 1, 0)
+            elif key in [260, 452]: # LEFT
+                self.cursor_x = max(self.cursor_x - 1, 0)
+            elif key in [261, 454]: # RIGHT
+                self.cursor_x = min(self.cursor_x + 1, self.frame_width - 1)
+            else:
+                self.cursor_change = False
 
-        if key == 32: # SPACEBAR
-            if self.cur_thing and self.cur_thing.team == self.cur_team:
-                self.cur_thing.cur_actions -= 1
+            if key == 9: # TAB
+                self.cur_thing_ind += 1
+                self.cur_thing_ind = self.cur_thing_ind % len(self.team_things[self.cur_team])
+                
+                self.cur_thing = self.team_things[self.cur_team][self.cur_thing_ind] # have to do this early to get y,x
+                self.cur_thing.refresh_action_blocks()
+                self.cursor_y = self.cur_thing.y
+                self.cursor_x = self.cur_thing.x
 
-        self.cur_thing = self.map[self.cursor_y][self.cursor_x].thing
-
-        if self.is_turn_over():
-            if self.cur_team == "PLAYER":
-                self.cur_team = "ENEMY"
-            elif self.cur_team == "ENEMY":
-                self.cur_team = "PLAYER"
+        
+            self.cur_thing = self.team_things[self.cur_team][self.cur_thing_ind]
             
-            self.refresh()
+            if key in range(49, 58): # 1, 2, 3, 4, 5, 6, 7, 8, 9
+                num_key = key - 48
+        
+                if self.cur_thing and self.cur_thing.team == "PLAYER" and len(self.cur_thing.action_blocks) >= num_key:
+                    self.cur_thing.action_blocks[num_key - 1]["func"]()
 
-        self.key = key
+            if self.is_turn_over():
+                self.cur_team = "ENEMY"
+                self.refresh_actions()
+
+            self.key = key
+        elif self.cur_team == "ENEMY":
+            # >>>
+            thing_options = [x for x in self.things if x.team == "ENEMY" and x.cur_actions > 0]
+            thing_options[0].cur_actions -= 1
+
+            if self.is_turn_over():
+                self.cur_team = "PLAYER"
+                self.refresh_actions()
 
     def draw(self, y: int, x: int, scr):
         # draw frame
@@ -73,6 +103,10 @@ class Game:
 
         self.map.draw(y + 1, x + 1, scr)
 
+        for thing in self.things:
+            this_bg = self.map[thing.y][thing.x].bg
+            scr.addstr(y + thing.y + 1, x + thing.x + 1, thing.img, curses.color_pair(color_code(thing.get_color(), this_bg)))
+
         # draw current turn
         scr.addstr(y + 8, x + 2, f"<< {self.cur_team} Turn >>")
 
@@ -84,22 +118,19 @@ class Game:
 
         if self.cur_thing is not None:
             self.cur_thing.draw_info(y + 1, x + 25, scr)
+            self.cur_thing.draw_actions(y + 4, x + 23, scr)
 
-        # cursor
-        self.cursor_flash = not self.cursor_flash
-        if self.cursor_flash:
-            scr.addstr(y + 1 + self.cursor_y, x + 1 + self.cursor_x, "■")   
+        if self.cur_team == "PLAYER":
+            # cursor
+            self.cursor_flash = not self.cursor_flash
+            if self.cursor_flash:
+                scr.addstr(y + 1 + self.cursor_y, x + 1 + self.cursor_x, "■")   
 
         scr.addstr(9, 0, str(self.key))
         scr.addstr(9, 5, str(sum([x.cur_actions for x in self.things if x.team == self.cur_team])))
 
     def test(self):
-        self.things.append(Thing())
-        self.things.append(Thing())
-        self.things.append(Scout(team="PLAYER"))
-        self.things.append(Scout(team="ENEMY"))
+        self.add_thing(Thing(0, 3, team="PLAYER"))
+        self.add_thing(Thing(3, 10, team="PLAYER"))
 
-        self.map.add_thing(2, 3, self.things[0])
-        self.map.add_thing(2, 4, self.things[1])
-        self.map.add_thing(0, 3, self.things[2])
-        self.map.add_thing(3, 10, self.things[3])
+        self.refresh_actions()

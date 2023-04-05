@@ -14,6 +14,8 @@ class Scout(Thing):
         self.max_actions = 2
         self.cur_actions = self.max_actions
 
+        self.actions = ["MOVE"]
+
     def draw_info(self, y: int, x: int, scr):
         super().draw_info(y, x, scr)
 

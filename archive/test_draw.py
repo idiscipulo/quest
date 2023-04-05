@@ -1,6 +1,6 @@
 import curses
 
-def draw_map(scr, y:int, x:int, clock:bool):
+def draw_map(scr, y: int, x: int, clock:bool):
     # actual dimensions:
     # width -- 9
     # height - 7

@@ -2,8 +2,7 @@ import curses
 
 class Tile:
     def __init__(self):
-        self.thing = None
-        self.img = " "
+        self.img = "-"
         self.fg = 0
         self.bg = 0
 
